@@ -1,0 +1,4 @@
+venv
+log/*
+data/*
+web/data/*
