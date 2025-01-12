@@ -7,7 +7,7 @@ Scripts and html for BNB monitoring.
 
 Go to your workdir where your scripts will be running and clone git:
 ```bash
-git clone https://github.com/zarko1/bnb_monitor.git
+git clone git@github.com:zarko1/bnb_monitor.git
 ```
 
 ## Setup python
