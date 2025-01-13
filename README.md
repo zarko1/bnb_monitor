@@ -29,8 +29,16 @@ pip install pandas
 
 Copy ./web and its content to the web server.
 
+## Setup cron
+
+Install crontab (example in scripts/crontab):
+```
+05 * * * * PATH_TO_YOUR_WORK_DIR/scripts/cronJob.sh >> PATH_TO_YOUR_WORKDIR/log/cron.log 2>&1
+```
+If you haven't done it before run kcroninit to get the kerberos ticket for your cron jobs. 
+
 ## Modify paths
-Update the $WORKDIR and $WEBDATA paths in the scripts/cronjob.sh script.
+Update the $WORKDIR and $WEBDATA paths in the scripts/cronJob.sh script.
 
 ## Create directories
 Default setup will need $WORKDIR/data, $WORKDIR/log and $WEBDATA
@@ -56,11 +64,5 @@ optional arguments:
 
 ```
 
-# Setup cron
 
-Install crontab (example in scripts/crontab):
-```
-05 * * * * PATH_TO_YOUR_WORK_DIR/scripts/cronJob.sh >> PATH_TO_YOUR_WORKDIR/log/cron.log 2>&1
-```
-If neccessary run kcroninit to get the kerberos ticket.
 
