@@ -38,10 +38,8 @@ savedev=["E:TOR860","E:TOR875","E:THCURR","E:LHCURR","E:LM875A","E:LM875B","E:LM
 
 output_file="output.csv"
 start_time=datetime(2024,12,9,0,0,0) #Monday before beam came back
-debug=False
-if args.debug is not None:
-    debug=True
-    
+debug=args.debug
+
 if args.output_file is not None:
     output_file=args.output_file
 if args.start_date is not None:
