@@ -17,7 +17,8 @@
       
       var myGlob={
 	  doNotAverage: ["NSpills","NTriggers"],
-	  panels: ["pot-1","pot-2","tor-1","tor-2","horn-1","horn-2","bpm-1","bpm-2","lm-1","lm-2"]
+//	  panels: ["pot-1","pot-2","tor-1","tor-2","horn-1","horn-2","bpm-1","bpm-2","lm-1","lm-2"]
+	  panels: ["pot-1","tor-1","horn-1","bpm-1","lm-1"]
       };
       
       function init() {
@@ -28,12 +29,12 @@
                   // Get the target from the "data-target" attribute
                   const target = el.dataset.target;
                   const $target = document.getElementById(target);
-		  
                   // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
                   el.classList.toggle('is-active');
                   $target.classList.toggle('is-active');
-              });
+	      });
           });
+
           //now activate this page menu
           const elements = document.querySelectorAll('a.navbar-item'); // Select elements
           for (const element of elements) {
@@ -45,8 +46,8 @@
 	  //global plot options
 	  myGlob.opt= { titleTextStyle: {fontSize: 16},
 //			width: Math.floor(document.getElementById('pot_plot').clientWidth*0.9),
-						height: Math.floor(document.getElementById('pot_plot').clientWidth*0.7),
-			width: '90%',
+			height: Math.floor(document.getElementById('pot_plot').clientWidth*0.7),
+			width: '100%',
 			legend: 'top',
 			hAxis: {title: "Time",
 				titleTextStyle: {fontSize: 16}, 
@@ -67,13 +68,31 @@
 	      isRange:true,
 	      startDate: currentWeek,
 	      endDate: new Date(),
-	      maxDate: new Date()
+	      maxDate: new Date(),
+	      showClearButton: false,
+	      showTodayButton: false,
 	  }
 
 	  myGlob.calendars = bulmaCalendar.attach('[type="date"]', calOpt);	  
 	  myGlob.calendars.forEach(calendar => {
 	      calendar.on('select', date => {
 		  plotData(date.data.startDate,date.data.endDate);
+	      });
+	      calendar.on('save', date => {
+		  if (typeof (myGlob.calendars[0].startDate) !== 'undefined') {
+		      console.log("startDate is fine", myGlob.calendars[0].startDate);
+		  } else {
+		      console.log("startDate is undefined putting it back to last setting");
+		      myGlob.calendars[0].startDate=new Date(myGlob.lastStartDate.getTime());
+		  }
+		      
+		  if (typeof (myGlob.calendars[0].endDate) !== 'undefined') {
+		      console.log("endDate is fine", myGlob.calendars[0].endDate);
+		  } else {
+		      console.log("endDate is undefined putting it back to last setting");
+		      myGlob.calendars[0].endDate=new Date(myGlob.lastEndDate.getTime());
+		  }
+		  myGlob.calendars[0]._refreshInput();
 	      });
 	  });
 
@@ -204,6 +223,8 @@
       }
       
       function plotData(startDate, endDate) {
+	  myGlob.lastStartDate=new Date(startDate);
+	  myGlob.lastEndDate=new Date(endDate);
 	  //unhide panels when making plots
 	  myGlob.panels.forEach(panel => {
 	      el=document.getElementById(panel);
@@ -354,6 +375,10 @@
       function plotDevices(devList, dataHourly, dataDaily,elPrefix)
       {
 	  var optTime=structuredClone(myGlob.opt);
+	  var dateArray=[];
+	  for (var i=0;i<dataDaily.getNumberOfRows(); i++) 
+	      dateArray.push(dataDaily.getValue(i,0));
+	  optTime.hAxis.ticks=dateArray;
 	  //strip E: from device name
 	  var idev=0;
 	  optTime.series={};
@@ -367,8 +392,7 @@
 	  var chartTime = new google.visualization.ComboChart(document.getElementById(elPrefix+'_data_plot'));
 	  view.setColumns([0].concat(devList.map(id)));
 	  google.visualization.events.addListener(chartTime, 'select', () => {selectHandler(chartTime,dataHourly)});
-	  optTime=structuredClone(myGlob.opt);
-	  optTime.series={};
+	  
 	  var idev=0;
 	  devList.forEach(dev => {
 	      optTime.series[idev]={labelInLegend: dev.substring(2,Math.max(dev.indexOf(" "),dev.length))};
@@ -450,13 +474,13 @@
 	  });
 	  for (var i=0;i<divList.length;i++) {
 	      const plotSet1=document.getElementById(divList[i]+"-1");
-	      const plotSet2=document.getElementById(divList[i]+"-2");
+//	      const plotSet2=document.getElementById(divList[i]+"-2");
 	      const menuOption=document.getElementById("s_"+divList[i]);
 
 	      if ( (what==divList[i] && !menuOption.classList.contains("has-text-weight-bold")) ||
 		   (what!=divList[i] && menuOption.classList.contains("has-text-weight-bold")) ) {
 		  plotSet1.classList.toggle("is-hidden");
-		  plotSet2.classList.toggle("is-hidden");
+//		  plotSet2.classList.toggle("is-hidden");
 		  menuOption.classList.toggle("has-text-weight-bold");
 	      }
 	  }
@@ -504,30 +528,32 @@
 	  plotData(startDate,endDate);
       }
     </script>
-	       
+
   </head>
   <body>
-    <div class="continer">
+
       <nav class="navbar" role="navigation" aria-label="main navigation">
-	<a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
-           data-target="myNavbar">
-	  <span aria-hidden="true"></span>
-	  <span aria-hidden="true"></span>
-	  <span aria-hidden="true"></span>
-	  <span aria-hidden="true"></span>
-	</a>
-	<div id="myNavbar" class="navbar-menu">
-	  <div class="navbar-item">
+	<div class="navbar-brand">
+	  <a class="navbar-item">
 	    <input id="datePicker" class="bulmaCalendar" type="date" />
+	  </a>
+	  <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
+             data-target="myNavbar">
+	    <span aria-hidden="true"></span>
+	    <span aria-hidden="true"></span>
+	    <span aria-hidden="true"></span>
+	    <span aria-hidden="true"></span>
+	  </a>
+	</div>
+	<div id="myNavbar" class="navbar-menu is-size-4 is-size-6-desktop">
+	  <div class="navbar-item">
+	    <button class="button is-info is-rounded" onClick="buttonClick('now')">This week</button>
 	  </div>
 	  <div class="navbar-item">
-	    <button class="button is-info" onClick="buttonClick('now')">This week</button>
+	    <button class="button is-success is-rounded" onClick="buttonClick('last')">Last week</button>
 	  </div>
 	  <div class="navbar-item">
-	    <button class="button is-success" onClick="buttonClick('last')">Last week</button>
-	  </div>
-	  <div class="navbar-item">
-	    <button class="button is-warning" onClick="buttonClick('all')">All time</button>
+	    <button class="button is-warning is-rounded" onClick="buttonClick('all')">All time</button>
 	  </div>  
 	  <div class="navbar-end">
 	    <div class="navbar-item">
@@ -549,76 +575,66 @@
 	</div>
       </nav>
       <br>
-
-      <div class="columns is-centered has-text-centered is-3" id="pot-1">
-	<div class="column">
+    <div class="container">
+      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="pot-1">
+	<div class="column is-half-desktop">
 	  <p id="pot_plot"></p>
 	</div>
-	<div class="column">
+	<div class="column is-half-desktop">
 	  <p id="uptime_plot"></p>
 	</div>
-      </div>
-      <div class="columns is-centered has-text-left ml-6 is-3" id="pot-2">
-	<div class="column">
+
+	<div class="column is-three-quarters ml-6">
 	  <p id="data_table"></p>
 	  <br>
 	  <p id="stats_table"></p>
 	</div>
       </div>
       
-      <div class="columns is-centered has-text-centered is-3" id="tor-1">
-	<div class="column">
+      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="tor-1">
+	<div class="column is-half-desktop">
 	  <p id="tor_data_plot"></p>
 	</div>
-	<div class="column">
+	<div class="column is-half-desktop">
 	  <p id="tor_eff_plot"></p>
 	</div>
-      </div>
-      <br>
-      <div class="columns is-centered has-text-left ml-6 is-3" id="tor-2">
-	<div class="column">
+	<div class="column is-three-quarters ml-6">
 	  <p id="tor_stats"></p>
 	</div>
       </div>
 
-      <div class="columns is-centered has-text-centered is-3" id="horn-1">
-	<div class="column">
+      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="horn-1">
+	<div class="column is-half-desktop">
 	  <p id="horn_data_plot"></p>
 	</div>
-	<div class="column">
+	<div class="column is-half-desktop">
 	  <p id="horn_eff_plot"></p>
 	</div>
-      </div>
-      <div class="columns is-centered has-text-left ml-6 is-3" id="horn-2">
-	<div class="column">
+	<div class="column is-three-quarters ml-6">
 	  <p id="horn_stats"></p>
 	</div>
       </div>
       
-      <div class="columns is-centered has-text-centered is-3" id="bpm-1">
-	<div class="column">
+      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="bpm-1">
+	<div class="column is-half-desktop">
 	  <p id="bpm_data_plot"></p>
 	</div>
-	<div class="column">
+	<div class="column is-half-desktop">
 	  <p id="bpm_eff_plot"></p>
 	</div>
-      </div>
-      <div class="columns is-centered has-text-left ml-6 is-3" id="bpm-2">
-	<div class="column">
+	<div class="column is-three-quarters ml-6">
 	  <p id="bpm_stats"></p>
 	</div>
       </div>
       
-      <div class="columns is-centered has-text-centered is-3" id="lm-1">
-	<div class="column">
+      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="lm-1">
+	<div class="column is-half-desktop">
 	  <p id="lm_data_plot"></p>
 	</div>
-	<div class="column">
+	<div class="column is-half-desktop">
 	  <p id="lm_eff_plot"></p>
 	</div>
-      </div>
-      <div class="columns is-centered has-text-left ml-6 is-3" id="lm-2">
-	<div class="column">
+	<div class="column is-three-quarters ml-6">
 	  <p id="lm_stats"></p>
 	</div>
       </div>
