@@ -1,646 +1,764 @@
 <!doctype html>
 <html data-theme="light">
-  <head>
-    <title>BNB Monitor</title>
-    <script src="https://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.40/jquery.csv.min.js" integrity="sha512-Y8iWYJDo6HiTo5xtml1g4QqHtl/PO1w+dmUpQfQSOTqKNsMhExfyPN2ncNAe9JuJUSKzwK/b6oaNPop4MXzkwg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bulma-calendar@7.1.1/dist/js/bulma-calendar.min.js"></script>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma-calendar@7.1.1/dist/css/bulma-calendar.min.css">
-    
-    <!--Load the AJAX API-->
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-      google.charts.load("current", {packages:['corechart','calendar','table']});
-      google.charts.setOnLoadCallback(init);
-      
-      var myGlob={
-	  doNotAverage: ["NSpills","NTriggers"],
-//	  panels: ["pot-1","pot-2","tor-1","tor-2","horn-1","horn-2","bpm-1","bpm-2","lm-1","lm-2"]
-	  panels: ["pot-1","tor-1","horn-1","bpm-1","lm-1"]
-      };
-      
-      function init() {
-	  const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
-          // Add a click event on each of them
-          $navbarBurgers.forEach(el => {
-              el.addEventListener('click', () => {
-                  // Get the target from the "data-target" attribute
-                  const target = el.dataset.target;
-                  const $target = document.getElementById(target);
-                  // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
-                  el.classList.toggle('is-active');
-                  $target.classList.toggle('is-active');
-	      });
-          });
+<head>
+	<title>BNB Monitor</title>
+	<script src="https://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.40/jquery.csv.min.js"
+		integrity="sha512-Y8iWYJDo6HiTo5xtml1g4QqHtl/PO1w+dmUpQfQSOTqKNsMhExfyPN2ncNAe9JuJUSKzwK/b6oaNPop4MXzkwg=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bulma-calendar@7.1.1/dist/js/bulma-calendar.min.js"></script>
 
-          //now activate this page menu
-          const elements = document.querySelectorAll('a.navbar-item'); // Select elements
-          for (const element of elements) {
-              if (element.href === window.location.href) {
-                  element.style.fontWeight = "bold";
-              }
-          }
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma-calendar@7.1.1/dist/css/bulma-calendar.min.css">
 
-	  //global plot options
-	  myGlob.opt= { titleTextStyle: {fontSize: 16},
-//			width: Math.floor(document.getElementById('pot_plot').clientWidth*0.9),
-			height: Math.floor(document.getElementById('pot_plot').clientWidth*0.7),
-			width: '100%',
-			legend: 'top',
-			hAxis: {title: "Time",
-				titleTextStyle: {fontSize: 16}, 
-				format: 'M/d/y',
-				showTextEvery: 1,
-				slantedText: true,
-				gridlines: {color: "white", count: 0},
-			       } 
-		      };
+	<!--Load the AJAX API-->
+	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	<script type="text/javascript">
+		google.charts.load("current", { packages: ['corechart', 'calendar', 'table'] });
+		google.charts.setOnLoadCallback(init);
 
-	  var currentWeek=new Date();
-	  if (currentWeek.getDay()!=1) 
-	      currentWeek.setDate(currentWeek.getDate()-(currentWeek.getDay()+6)%7);
-	  
-	  currentWeek.setHours(0); currentWeek.setMinutes(0); currentWeek.setSeconds(0);
-	  var calOpt = {
-	      type: 'date', 
-	      isRange:true,
-	      startDate: currentWeek,
-	      endDate: new Date(),
-	      maxDate: new Date(),
-	      showClearButton: false,
-	      showTodayButton: false,
-	  }
+		var myGlob = {
+			doNotAverage: ["NSpills", "NTriggers", "Fail E:TOR860", "Fail E:THCURR", "Fail FOM"],
+			//	  panels: ["pot-1","pot-2","tor-1","tor-2","horn-1","horn-2","bpm-1","bpm-2","lm-1","lm-2"]
+			panels: ["bdq-1", "pot-1", "tor-1", "horn-1", "bpm-1", "lm-1"]
+		};
 
-	  myGlob.calendars = bulmaCalendar.attach('[type="date"]', calOpt);	  
-	  myGlob.calendars.forEach(calendar => {
-	      calendar.on('select', date => {
-		  plotData(date.data.startDate,date.data.endDate);
-	      });
-	      calendar.on('save', date => {
-		  if (typeof (myGlob.calendars[0].startDate) !== 'undefined') {
-		      console.log("startDate is fine", myGlob.calendars[0].startDate);
-		  } else {
-		      console.log("startDate is undefined putting it back to last setting");
-		      myGlob.calendars[0].startDate=new Date(myGlob.lastStartDate.getTime());
-		  }
-		      
-		  if (typeof (myGlob.calendars[0].endDate) !== 'undefined') {
-		      console.log("endDate is fine", myGlob.calendars[0].endDate);
-		  } else {
-		      console.log("endDate is undefined putting it back to last setting");
-		      myGlob.calendars[0].endDate=new Date(myGlob.lastEndDate.getTime());
-		  }
-		  myGlob.calendars[0]._refreshInput();
-	      });
-	  });
+		function init() {
+			const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+			// Add a click event on each of them
+			$navbarBurgers.forEach(el => {
+				el.addEventListener('click', () => {
+					// Get the target from the "data-target" attribute
+					const target = el.dataset.target;
+					const $target = document.getElementById(target);
+					// Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+					el.classList.toggle('is-active');
+					$target.classList.toggle('is-active');
+				});
+			});
 
-	  loadData();
-	  // Set interval to call init again every 10 minutes (data updated hourly)
-          setInterval(loadData, 10*60*1000);
-      }
-      
-      function loadData() {
-	  $.get("data/beam_data_hourly.csv", function(csvString) {
-	      // ------------load hourly data-----------
-	      arrayDataHourly = $.csv.toArrays(csvString, {onParseValue: $.csv.hooks.castToScalar});
-	      for ( var i=1;i<arrayDataHourly.length;i++ ) {
-		  arrayDataHourly[i][0]=new Date(arrayDataHourly[i][0]);
-	      }
-	      arrayDataDaily=rebinData(arrayDataHourly,60*60*24*1000); //bin daily
-	      arrayDataWeekly=rebinData(arrayDataHourly,60*60*24*1000*7); //bin weekly
+			//now activate this page menu
+			const elements = document.querySelectorAll('a.navbar-item'); // Select elements
+			for (const element of elements) {
+				if (element.href === window.location.href) {
+					element.style.fontWeight = "bold";
+				}
+			}
 
-	      myGlob.dataHourly = new google.visualization.arrayToDataTable(arrayDataHourly);
-	      myGlob.dataWeekly = new google.visualization.arrayToDataTable(arrayDataWeekly);
-	      myGlob.dataDaily = new google.visualization.arrayToDataTable(arrayDataDaily);
-
-	      //add total and cumulative POT and normalized LM
-	      processData(myGlob.dataHourly);
-	      processData(myGlob.dataDaily);
-	      processData(myGlob.dataWeekly);
-
-	      formatData(myGlob.dataHourly);
-	      formatData(myGlob.dataDaily);
-	      formatData(myGlob.dataWeekly);
-	      
-	      const updateDiv = document.getElementById("lastUpdated");
-	      var tstamp=new Date(myGlob.dataHourly.getValue(myGlob.dataHourly.getNumberOfRows()-1,0).getTime());
-	      updateDiv.innerHTML = "Last Updated on "+tstamp.toString();
-	     
-	      //set calendar range (max already set to today)
-	      if (typeof myGlob.calendars[0].datePicker._min === 'undefined')
-		  myGlob.calendars[0].datePicker._min=new Date(arrayDataDaily[1][0].getTime());
-	      else
-		  myGlob.calendars[0].datePicker._min.setTime(arrayDataDaily[1][0].getTime());
-
-	      myGlob.calendars[0]._refreshInput();
-
-	      plotData(myGlob.calendars[0].startDate,myGlob.calendars[0].endDate);	     
-	  });
-      }
-
-      function rebinData(data, dt) {
-	  rebinned=[structuredClone(data[0])];
-	  rebinned.push(structuredClone(data[1]));
-	  rebinned[1][0]=new Date(rebinned[1][0].getFullYear(),rebinned[1][0].getMonth(),rebinned[1][0].getDate());
-	  var nEntries=1;
-	  var lastRow=rebinned.length-1;
-	  for (var i=2;i<data.length;i++ ) {
-	      timeDiff=(data[i][0]-rebinned[lastRow][0]);
-	      if (timeDiff<dt) { //keep adding to the bin until it turns over
-		  nEntries++;
-		  for (var j=1;j<data[i].length;j++)
-		      rebinned[lastRow][j]+=data[i][j];
-	      } else {
-		  for (var k=1;k<rebinned[lastRow].length; k++)
-		      if (!myGlob.doNotAverage.includes(rebinned[0][k]))
-			  rebinned[lastRow][k]/=nEntries;
-		  rebinned.push(structuredClone(data[i]));
-		  lastRow=rebinned.length-1;;
-		  rebinned[lastRow][0]=new Date(rebinned[lastRow][0].getFullYear(),rebinned[lastRow][0].getMonth(),rebinned[lastRow][0].getDate());
-		  nEntries=1;
-	      }
-	  }
-	  //deal with last row
-	  for (var k=1;k<rebinned[lastRow].length; k++)
-	      if (!myGlob.doNotAverage.includes(rebinned[0][k]))
-		  rebinned[lastRow][k]/=nEntries;
-
-	  return rebinned;
-      }
-
-      function processData(data) {
-	  data.addColumn('number','POT');
-	  data.addColumn('number','Cumulative POT');
-	  
-	  for (var i=0;i<data.getNumberOfRows(); i++) {
-	      var totPOT=data.getValue(i,id("E:TOR860"))*data.getValue(i,id("NSpills"))*1e12;
-	      var normLM875A=data.getValue(i,id("E:LM875A"))*data.getValue(i,id("NSpills"))/totPOT*1e12;
-	      var normLM875B=data.getValue(i,id("E:LM875B"))*data.getValue(i,id("NSpills"))/totPOT*1e12;
-	      var normLM875C=data.getValue(i,id("E:LM875C"))*data.getValue(i,id("NSpills"))/totPOT*1e12;
-
-	      data.setCell(i,id("POT"),totPOT);
-	      data.setCell(i,id("E:LM875A"),normLM875A);
-	      data.setCell(i,id("E:LM875B"),normLM875B);
-	      data.setCell(i,id("E:LM875C"),normLM875C);
-	      data.setCell(i,id("Uptime"),data.getValue(i,id("Uptime"))*100.); //scale percentages
-	      if (i==0) 
-		  data.setCell(i,id("Cumulative POT"),totPOT);
-	      else
-		  data.setCell(i,id("Cumulative POT"),data.getValue(i-1,id("Cumulative POT"))+totPOT);
-	  }
-      }
-
-      function formatData(data) {
-	  //format columns
-	  var formatPOT = new google.visualization.NumberFormat({pattern: '0.00E00'});
-	  formatPOT.format(data,id("POT"));
-	  formatPOT.format(data,id("E:TOR860"));
-	  formatPOT.format(data,id("E:TOR875"));
-	  formatPOT.format(data,id("Cumulative POT"));
-	  var formatPercent = new google.visualization.NumberFormat({suffix: '%', pattern:'#.#'});
-	  formatPercent.format(data, id("Uptime"));
-      }
-
-      function selectHandler(chart, data) {
-          var selectedItem = chart.getSelection()[0];
-          if (selectedItem) {
-	      var startDate= new Date(data.getValue(selectedItem.row, 0));
-	      var endDate=new Date(startDate.getTime()+24*60*60*1000);
-	      myGlob.calendars[0].startDate.setTime(startDate.getTime());
-	      myGlob.calendars[0].endDate.setTime(endDate.getTime());
-	      myGlob.calendars[0]._refreshInput();
-	      plotData(startDate, endDate);
-          }	  
-      }
-      function adjustScale(opt) {
-	  delete opt["hAxis"];
-	  opt.hAxis={title: "Time",
-		     titleTextStyle: {fontSize: 16}, 
-		     slantedText: true,
-		    };
-      }
-      
-      function plotData(startDate, endDate) {
-	  myGlob.lastStartDate=new Date(startDate);
-	  myGlob.lastEndDate=new Date(endDate);
-	  //unhide panels when making plots
-	  myGlob.panels.forEach(panel => {
-	      el=document.getElementById(panel);
-	      if (el.classList.contains("is-hidden"))
-		  el.classList.toggle("is-hidden");
-	  });
-	  
-	  var dailyData=myGlob.dataDaily.clone();
-	  var rowsToKeep=dailyData.getFilteredRows([{
-	      column: 0,
-	      minValue: new Date(startDate-1000), //offset by second to avoid any boundary problems
-	      maxValue: new Date(endDate-1000)
-	  }]);
-	  for ( var i=dailyData.getNumberOfRows()-1; i>=0; i-- ) {
-	      if ( !rowsToKeep.includes(i) )  {
-		  dailyData.removeRow(i);
-	      } else {
-		  //subtract initial cumulative POT (unless plotting all)
-		  if (rowsToKeep[0]>0) 
-		      dailyData.setCell(i,id("Cumulative POT"), dailyData.getValue(i,id("Cumulative POT"))-
-					dailyData.getValue(rowsToKeep[0]-1,id("Cumulative POT")));
-	      }
-	  }
-	  formatData(dailyData);
-	  
-	  //load hourly data and remove points with no beam, offset time like above
-	  var hourlyData=myGlob.dataHourly.clone();
-	  var rowsToKeep=hourlyData.getFilteredRows([
-	      {
-		  column: 0,
-		  minValue: new Date(startDate-1000),
-		  maxValue: new Date(endDate-1000)
-	      },
-	      {
-		  column: id("E:TOR860"),
-		  minValue: 0.1
-	      }    
-	  ]);
-	
-	  for ( var i=hourlyData.getNumberOfRows()-1; i>=0; i-- ) 
-	      if ( !rowsToKeep.includes(i) ) {
-		  hourlyData.removeRow(i);
-	      } else {
-		  //subtract initial cumulative POT (unless plotting all)
-		  if (rowsToKeep[0]>0)
-		      hourlyData.setCell(i,id("Cumulative POT"), hourlyData.getValue(i,id("Cumulative POT"))-
-					 hourlyData.getValue(rowsToKeep[0]-1,id("Cumulative POT")));
-	      }
-
-	  var viewHourly = new google.visualization.DataView(hourlyData);
-	  var viewDaily = new google.visualization.DataView(dailyData);
-	  	  
-	  var dateArray=[];
-	  for (var i=0;i<dailyData.getNumberOfRows(); i++) 
-	      dateArray.push(dailyData.getValue(i,0));
-
-	  /*
-	  //Add days in the plot when plotting less than 7
-	  while (dateArray.length<7) {
-	      var addDay=new Date(dateArray[dateArray.length-1]);
-	      addDay.setDate(addDay.getDate()+1);
-	      dateArray.push(addDay);
-	  }
-	  */
-	  myGlob.opt.hAxis.ticks=dateArray;
-	  
-	  // ----------- POT Plot -----------
-	  optPOT=structuredClone(myGlob.opt);
-	  optPOT.title= "POT";
-	  optPOT.seriesType= 'bars';
-	  optPOT.series= {0: {targetAxisIndex: 0, visibleInLegend: false},
-			  1: {targetAxisIndex: 1, type: 'line', visibleInLegend: true}
-			 };
-	  optPOT.vAxes= {0: {title: "POT", format: 'scientific', maxValue: dailyData.getColumnRange(id("POT")).max*1.1, minValue: 0, format: '0.0E00', titleTextStyle: {fontSize: 16, color: "blue"}},
-			 1: {title: 'Cumulative POT', format: 'scientific', maxValue: dailyData.getColumnRange(id("Cumulative POT")).max*1.1, minValue:0, format: '0.0E00', titleTextStyle: {fontSize: 16, color: "red"}}
+			//global plot options
+			myGlob.opt = {
+				titleTextStyle: { fontSize: 16 },
+				//			width: Math.floor(document.getElementById('pot_plot').clientWidth*0.9),
+				height: Math.floor(document.getElementById('pot_plot').clientWidth * 0.7),
+				width: '100%',
+				legend: 'top',
+				hAxis: {
+					title: "Time",
+					titleTextStyle: { fontSize: 16 },
+					format: 'M/d/y',
+					showTextEvery: 1,
+					slantedText: true,
+					gridlines: { color: "white", count: 0 },
+				}
 			};
-	  
-	  var chartPOT = new google.visualization.ComboChart(document.getElementById('pot_plot'));
-      	  // Listen for the 'select' event, and call my function selectHandler() when
-	  // the user selects something on the chart.	  
-	  google.visualization.events.addListener(chartPOT, 'select', () => {selectHandler(chartPOT,dailyData)});
-	  viewDaily.setColumns([0,id("POT"),id("Cumulative POT")]);
-	  chartPOT.draw(viewDaily, optPOT);
 
-	  // ----------- Uptime plot -----------
-	  optUptime = structuredClone(myGlob.opt);
-	  optUptime.title= "Beam Uptime (hourly average evaluated by minute)";
-	  optUptime.legend= 'none';
-//	  optUptime.seriesType='line';
-	  optUptime.pointSize=2;
-	  optUptime.lineWidth=0;
-	  optUptime.vAxes= {0: {title: "Beam Uptime", format: 'percentage', maxValue: 100, minValue: 0, format: '#\'%\'', titleTextStyle: {fontSize: 16, color: "blue"}},
-			   };
-	  
-	  var chartUptime = new google.visualization.ComboChart(document.getElementById('uptime_plot'));
-	  viewHourly.setColumns([0, id("Uptime")]);
-	  chartUptime.draw(viewHourly, optUptime);
+			var currentWeek = new Date();
+			if (currentWeek.getDay() != 1)
+				currentWeek.setDate(currentWeek.getDate() - (currentWeek.getDay() + 6) % 7);
 
-	  //  ----------- Stats table -----------
+			currentWeek.setHours(0); currentWeek.setMinutes(0); currentWeek.setSeconds(0);
+			var calOpt = {
+				type: 'date',
+				isRange: true,
+				startDate: currentWeek,
+				endDate: new Date(),
+				maxDate: new Date(),
+				showClearButton: false,
+				showTodayButton: false,
+			}
 
-	  var tableData = new google.visualization.Table(document.getElementById('data_table'));
-	  viewDaily.setColumns([0,id("POT"),id("NSpills"),id("NTriggers"),id("Uptime")]);
-	  var optTable=structuredClone(myGlob.opt);
-	  optTable.page="enable";
-	  delete optTable["height"];
-	  google.visualization.events.addListener(tableData, 'select', () => {selectHandler(tableData,dailyData)});
-	  tableData.draw(viewDaily, optTable);
+			myGlob.calendars = bulmaCalendar.attach('[type="date"]', calOpt);
+			myGlob.calendars.forEach(calendar => {
+				calendar.on('select', date => {
+					plotData(date.data.startDate, date.data.endDate);
+				});
+				calendar.on('save', date => {
+					if (typeof (myGlob.calendars[0].startDate) !== 'undefined') {
+						console.log("startDate is fine", myGlob.calendars[0].startDate);
+					} else {
+						console.log("startDate is undefined putting it back to last setting");
+						myGlob.calendars[0].startDate = new Date(myGlob.lastStartDate.getTime());
+					}
 
-	  //calculate totals
-	  var statsData = google.visualization.data.group(
-	      dailyData,
-	      // group across entire table -- use modifier to return same value for every row
-	      [{column: 0, modifier: function () {return '';}, type: 'string'}],
-	      [
-		  // aggregation functions
-		  {column: id("POT"), aggregation: google.visualization.data.sum, type: 'number'},
-		  {column: id("NSpills"), aggregation: google.visualization.data.sum, type: 'number'},
-		  {column: id("NTriggers"), aggregation: google.visualization.data.sum, type: 'number'},
-		  {column: id("Uptime"), aggregation: google.visualization.data.avg, type: 'number'}
-	      ]
-	  );
-	  var formatPOT = new google.visualization.NumberFormat({pattern: '0.00E00'});
-	  formatPOT.format(statsData,1);
-	  statsData.addColumn({'':'string'});
-	  statsData.setCell(0,5,"Total");
+					if (typeof (myGlob.calendars[0].endDate) !== 'undefined') {
+						console.log("endDate is fine", myGlob.calendars[0].endDate);
+					} else {
+						console.log("endDate is undefined putting it back to last setting");
+						myGlob.calendars[0].endDate = new Date(myGlob.lastEndDate.getTime());
+					}
+					myGlob.calendars[0]._refreshInput();
+				});
+			});
 
-	  optTable.page="disable";
-	  var tableStats = new google.visualization.Table(document.getElementById('stats_table'));
-	  var viewStats = new google.visualization.DataView(statsData);
-	  viewStats.setColumns([5,1,2,3,4]);
-	  tableStats.draw(viewStats, optTable);
+			loadData();
+			// Set interval to call init again every 10 minutes (data updated hourly)
+			setInterval(loadData, 10 * 60 * 1000);
+		}
 
-	  plotDevices(["E:TOR860","E:TOR875"], hourlyData, dailyData,"tor");
-	  plotDevices(["E:THCURR","E:LHCURR"], hourlyData, dailyData,"horn");
-	  plotDevices(["E:HP875","E:HPTG1","E:VP873","E:VP875"], hourlyData, dailyData, "bpm");
-	  plotDevices(["E:LM875A","E:LM875B","E:LM875C"], hourlyData, dailyData, "lm");
+		function loadData() {
+			$.get("data/beam_data_hourly.csv", function (csvString) {
+				// ------------load hourly data-----------
+				arrayDataHourly = $.csv.toArrays(csvString, { onParseValue: $.csv.hooks.castToScalar });
+				for (var i = 1; i < arrayDataHourly.length; i++) {
+					arrayDataHourly[i][0] = new Date(arrayDataHourly[i][0]);
+				}
+				arrayDataDaily = rebinData(arrayDataHourly, 60 * 60 * 24 * 1000); //bin daily
+				arrayDataWeekly = rebinData(arrayDataHourly, 60 * 60 * 24 * 1000 * 7); //bin weekly
 
-	  //hide panels that should be hidden
-	  myGlob.panels.forEach(panel => {
-	      el=document.getElementById(panel);
-	      b="s_"+panel.substring(0,panel.indexOf("-"));
-	      elMenu=document.getElementById(b);	      
-	      if (!elMenu.classList.contains("has-text-weight-bold"))
-		  el.classList.toggle("is-hidden");
-	  });
-      }
+				myGlob.dataHourly = new google.visualization.arrayToDataTable(arrayDataHourly);
+				myGlob.dataWeekly = new google.visualization.arrayToDataTable(arrayDataWeekly);
+				myGlob.dataDaily = new google.visualization.arrayToDataTable(arrayDataDaily);
 
-      function plotDevices(devList, dataHourly, dataDaily,elPrefix)
-      {
-	  var optTime=structuredClone(myGlob.opt);
-	  var dateArray=[];
-	  for (var i=0;i<dataDaily.getNumberOfRows(); i++) 
-	      dateArray.push(dataDaily.getValue(i,0));
-	  optTime.hAxis.ticks=dateArray;
-	  //strip E: from device name
-	  var idev=0;
-	  optTime.series={};
-	  devList.forEach(dev => {
-	      optTime.series[idev]={labelInLegend: dev.substring(2,Math.max(dev.indexOf(" "),dev.length))};
-	      idev++;
-	  });
-	  
-	  var view = new google.visualization.DataView(dataHourly);
-	  var viewDaily = new google.visualization.DataView(dataDaily);
-	  var chartTime = new google.visualization.ComboChart(document.getElementById(elPrefix+'_data_plot'));
-	  view.setColumns([0].concat(devList.map(id)));
-	  google.visualization.events.addListener(chartTime, 'select', () => {selectHandler(chartTime,dataHourly)});
-	  
-	  var idev=0;
-	  devList.forEach(dev => {
-	      optTime.series[idev]={labelInLegend: dev.substring(2,Math.max(dev.indexOf(" "),dev.length))};
-	      idev++;
-	  });
-	  if ((dataHourly.getValue(dataDaily.getNumberOfRows()-1,0)-dataHourly.getValue(0,0))/(24.*60.*60.*1000)<1) 
-	      adjustScale(optTime); //change from day ticks to hour if plotting one day
+				//add total and cumulative POT and normalized LM
+				processData(myGlob.dataHourly);
+				processData(myGlob.dataDaily);
+				processData(myGlob.dataWeekly);
 
-	  chartTime.draw(view, optTime);
+				formatData(myGlob.dataHourly);
+				formatData(myGlob.dataDaily);
+				formatData(myGlob.dataWeekly);
 
-	  var optEff=structuredClone(myGlob.opt);
-	  optEff.title= "IFBEAM/ACNET Efficiency";
-	  optEff.vAxis={minValue: 0,
-			maxValue: 1.1
-		       };
-	  idev=0;
-	  optEff.seriesType='bars';
-	  optEff.series={};
-	  devList.forEach(dev => {
-	      optEff.series[idev]={labelInLegend: dev.substring(2,Math.max(dev.indexOf(" "),dev.length))};
-	      idev++;
-	  });
-	  
-	  var chartEff = new google.visualization.ComboChart(document.getElementById(elPrefix+'_eff_plot'));
-	  view.setColumns([0].concat(devList.map(dev => dev + " Efficiency").map(id)));
-	  viewDaily.setColumns([0].concat(devList.map(dev => dev + " Efficiency").map(id)));
-	  if ((dataDaily.getValue(dataDaily.getNumberOfRows()-1,0)-dataDaily.getValue(0,0))/(24.*60.*60.*1000)<1) {
-	      adjustScale(optEff); //change from day ticks to hour if plotting one day
-	      chartEff.draw(view, optEff);
-	  } else {
-	      chartEff.draw(viewDaily, optEff);
-	  }
-	  
-	  //calculate stats
-	  stats=[];
-	  devList.forEach( dev => {
-	      stats.push({column: id(dev), label: "sum_"+dev  ,aggregation: google.visualization.data.sum, type: 'number'})
-	      stats.push({column: id(dev), label: "avg_"+dev  ,aggregation: google.visualization.data.avg, type: 'number'})
-	      stats.push({column: id(dev), label: "min_"+dev  ,aggregation: google.visualization.data.min, type: 'number'})
-	      stats.push({column: id(dev), label: "max_"+dev  ,aggregation: google.visualization.data.max, type: 'number'})
-	      stats.push({column: id(dev+" Efficiency"), label: "eff_"+dev, aggregation: google.visualization.data.avg, type: 'number'})
-	  });
+				const updateDiv = document.getElementById("lastUpdated");
+				var tstamp = new Date(myGlob.dataHourly.getValue(myGlob.dataHourly.getNumberOfRows() - 1, 0).getTime());
+				updateDiv.innerHTML = "Last Updated on " + tstamp.toString();
 
-	  var statsData = google.visualization.data.group(
-	      dataHourly,
-	      // group across entire table -- use modifier to return same value for every row
-	      [{column: 0, modifier: function () {return '';}, type: 'string'}],
-	      stats
-	  );
+				//set calendar range (max already set to today)
+				if (typeof myGlob.calendars[0].datePicker._min === 'undefined')
+					myGlob.calendars[0].datePicker._min = new Date(arrayDataDaily[1][0].getTime());
+				else
+					myGlob.calendars[0].datePicker._min.setTime(arrayDataDaily[1][0].getTime());
 
-	  var summary=new google.visualization.DataTable();
-	  summary.addColumn('string', 'Device');
-	  summary.addColumn('number', 'Average');
-	  summary.addColumn('number', 'Min');
-	  summary.addColumn('number', 'Max');
-	  summary.addColumn('number', 'Efficiency');
-	  devList.forEach( dev => {
-	      summary.addRow([ dev.substring(2,Math.max(dev.indexOf(" "),dev.length)),
-			       statsData.getValue(0,statsData.getColumnIndex("avg_"+dev)),
-			       statsData.getValue(0,statsData.getColumnIndex("min_"+dev)),
-			       statsData.getValue(0,statsData.getColumnIndex("max_"+dev)),
-			       statsData.getValue(0,statsData.getColumnIndex("eff_"+dev))])
-	  });
-	  
-	  var tableSummary = new google.visualization.Table(document.getElementById(elPrefix+'_stats'));
-	  var viewSummary = new google.visualization.DataView(summary);
-	  var optTable=structuredClone(myGlob.opt);
-	  delete optTable["height"];
-	  tableSummary.draw(viewSummary, optTable);  
-      }
-      
-      function switchTo(what)
-      {
-	  divList=[];
-	  myGlob.panels.forEach( panel => {
-	      b=panel.substring(0,panel.indexOf("-"));
-	      if (!divList.includes(b))
-		  divList.push(b);
-	  });
-	  for (var i=0;i<divList.length;i++) {
-	      const plotSet1=document.getElementById(divList[i]+"-1");
-//	      const plotSet2=document.getElementById(divList[i]+"-2");
-	      const menuOption=document.getElementById("s_"+divList[i]);
+				myGlob.calendars[0]._refreshInput();
 
-	      if ( (what==divList[i] && !menuOption.classList.contains("has-text-weight-bold")) ||
-		   (what!=divList[i] && menuOption.classList.contains("has-text-weight-bold")) ) {
-		  plotSet1.classList.toggle("is-hidden");
-//		  plotSet2.classList.toggle("is-hidden");
-		  menuOption.classList.toggle("has-text-weight-bold");
-	      }
-	  }
-      }
+				plotData(myGlob.calendars[0].startDate, myGlob.calendars[0].endDate);
+			});
+		}
 
-      function id(dev) {
-	  index=myGlob.dataHourly.getColumnIndex(dev);
-	  if (index==-1)
-	      console.log("Failed to find index for ",dev);
-	  return index
-      }
+		function rebinData(data, dt) {
+			rebinned = [structuredClone(data[0])];
+			rebinned.push(structuredClone(data[1]));
+			rebinned[1][0] = new Date(rebinned[1][0].getFullYear(), rebinned[1][0].getMonth(), rebinned[1][0].getDate());
+			var nEntries = 1;
+			var lastRow = rebinned.length - 1;
+			for (var i = 2; i < data.length; i++) {
+				timeDiff = (data[i][0] - rebinned[lastRow][0]);
+				if (timeDiff < dt) { //keep adding to the bin until it turns over
+					nEntries++;
+					for (var j = 1; j < data[i].length; j++)
+						rebinned[lastRow][j] += data[i][j];
+				} else {
+					for (var k = 1; k < rebinned[lastRow].length; k++)
+						if (!myGlob.doNotAverage.includes(rebinned[0][k]))
+							rebinned[lastRow][k] /= nEntries;
+					rebinned.push(structuredClone(data[i]));
+					lastRow = rebinned.length - 1;;
+					rebinned[lastRow][0] = new Date(rebinned[lastRow][0].getFullYear(), rebinned[lastRow][0].getMonth(), rebinned[lastRow][0].getDate());
+					nEntries = 1;
+				}
+			}
+			//deal with last row
+			for (var k = 1; k < rebinned[lastRow].length; k++)
+				if (!myGlob.doNotAverage.includes(rebinned[0][k]))
+					rebinned[lastRow][k] /= nEntries;
 
-      function buttonClick(val) {
-	  var currentWeek=new Date();
-	  if (currentWeek.getDay()!=1) 
-	      currentWeek.setDate(currentWeek.getDate()-(currentWeek.getDay()+6)%7);
+			return rebinned;
+		}
 
-	  currentWeek.setHours(0); currentWeek.setMinutes(0); currentWeek.setSeconds(0);
-	  var lastWeekSun=currentWeek;
-	  today=new Date();
+		function processData(data) {
+			data.addColumn('number', 'POT');
+			data.addColumn('number', 'Cumulative POT');
 
-	  //flip all that are hidden otherwise legend gets messed up
-	  myGlob.panels.forEach(panel => {
-	      el=document.getElementById(panel);
-	      if (el.classList.contains("is-hidden"))
-		  el.classList.toggle("is-hidden");
-	  });
+			for (var i = 0; i < data.getNumberOfRows(); i++) {
+				var totPOT = data.getValue(i, id("E:TOR860")) * data.getValue(i, id("NSpills")) * 1e12;
+				var normLM875A = data.getValue(i, id("E:LM875A")) * data.getValue(i, id("NSpills")) / totPOT * 1e12;
+				var normLM875B = data.getValue(i, id("E:LM875B")) * data.getValue(i, id("NSpills")) / totPOT * 1e12;
+				var normLM875C = data.getValue(i, id("E:LM875C")) * data.getValue(i, id("NSpills")) / totPOT * 1e12;
 
-	  var startDate;
-	  var endDate;
-	  if (val=="now") {
-	      startDate=new Date(currentWeek);
-	      endDate=new Date();
-	  } else if (val=="last") {
-	      startDate=new Date(currentWeek.getTime()-24*60*60*1000*7);
-	      endDate=currentWeek;
-	  } else if (val=="all") {
-	      startDate=new Date(myGlob.dataHourly.getColumnRange(0).min);
-	      endDate=new Date(myGlob.dataHourly.getColumnRange(0).max);
-	  }
-	  
-	  myGlob.calendars[0].startDate.setTime(startDate.getTime());
-	  myGlob.calendars[0].endDate.setTime(endDate.getTime());
-	  myGlob.calendars[0]._refreshInput();
-	  plotData(startDate,endDate);
-      }
-    </script>
+				data.setCell(i, id("POT"), totPOT);
+				data.setCell(i, id("E:LM875A"), normLM875A);
+				data.setCell(i, id("E:LM875B"), normLM875B);
+				data.setCell(i, id("E:LM875C"), normLM875C);
+				data.setCell(i, id("Uptime"), data.getValue(i, id("Uptime")) * 100.); //scale percentages
+				if (i == 0)
+					data.setCell(i, id("Cumulative POT"), totPOT);
+				else
+					data.setCell(i, id("Cumulative POT"), data.getValue(i - 1, id("Cumulative POT")) + totPOT);
+			}
+		}
 
-  </head>
-  <body>
+		function formatData(data) {
+			//format columns
+			var formatPOT = new google.visualization.NumberFormat({ pattern: '0.00E00' });
+			formatPOT.format(data, id("POT"));
+			formatPOT.format(data, id("E:TOR860"));
+			formatPOT.format(data, id("E:TOR875"));
+			formatPOT.format(data, id("Cumulative POT"));
+			var formatPercent = new google.visualization.NumberFormat({ suffix: '%', pattern: '#.#' });
+			formatPercent.format(data, id("Uptime"));
+		}
 
-      <nav class="navbar" role="navigation" aria-label="main navigation">
-	<div class="navbar-brand">
-	  <a class="navbar-item">
-	    <input id="datePicker" class="bulmaCalendar" type="date" />
-	  </a>
-	  <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
-             data-target="myNavbar">
-	    <span aria-hidden="true"></span>
-	    <span aria-hidden="true"></span>
-	    <span aria-hidden="true"></span>
-	    <span aria-hidden="true"></span>
-	  </a>
+		function selectHandler(chart, data) {
+			var selectedItem = chart.getSelection()[0];
+			if (selectedItem) {
+				var startDate = new Date(data.getValue(selectedItem.row, 0));
+				startDate.setHours(0); startDate.setMinutes(0); startDate.setSeconds(0);
+				var endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000);
+				myGlob.calendars[0].startDate.setTime(startDate.getTime());
+				myGlob.calendars[0].endDate.setTime(endDate.getTime());
+				myGlob.calendars[0]._refreshInput();
+				plotData(startDate, endDate);
+			}
+		}
+
+		function selectForIFBEAM(chart, data) {
+			var selectedItem = chart.getSelection()[0];
+			if (selectedItem) {
+				var startDate = new Date(data.getValue(selectedItem.row, 0));
+				var endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+				var url = "https://dbdata0vm.fnal.gov:8104/ifbeam/data/data?b=BNB_monitor&t0="
+					+ startDate.toISOString().slice(0, -1)
+					+ "&t1="
+					+ endDate.toISOString().slice(0, -1)
+					+ "&f=csv";
+				console.log(url);
+				window.open(url, '_blank');
+			}
+		}
+
+		function adjustScale(opt) {
+			delete opt["hAxis"];
+			opt.hAxis = {
+				title: "Time",
+				titleTextStyle: { fontSize: 16 },
+				slantedText: true,
+			};
+		}
+
+		function plotData(startDate, endDate) {
+			myGlob.lastStartDate = new Date(startDate);
+			myGlob.lastEndDate = new Date(endDate);
+			//unhide panels when making plots
+			myGlob.panels.forEach(panel => {
+				el = document.getElementById(panel);
+				if (el.classList.contains("is-hidden"))
+					el.classList.toggle("is-hidden");
+			});
+
+			var dailyData = myGlob.dataDaily.clone();
+			var rowsToKeep = dailyData.getFilteredRows([{
+				column: 0,
+				minValue: new Date(startDate - 1000), //offset by second to avoid any boundary problems
+				maxValue: new Date(endDate - 1000)
+			}]);
+			for (var i = dailyData.getNumberOfRows() - 1; i >= 0; i--) {
+				if (!rowsToKeep.includes(i)) {
+					dailyData.removeRow(i);
+				} else {
+					//subtract initial cumulative POT (unless plotting all)
+					if (rowsToKeep[0] > 0)
+						dailyData.setCell(i, id("Cumulative POT"), dailyData.getValue(i, id("Cumulative POT")) -
+							dailyData.getValue(rowsToKeep[0] - 1, id("Cumulative POT")));
+				}
+			}
+			formatData(dailyData);
+
+			//load hourly data and remove points with no beam, offset time like above
+			var hourlyData = myGlob.dataHourly.clone();
+			var rowsToKeep = hourlyData.getFilteredRows([
+				{
+					column: 0,
+					minValue: new Date(startDate - 1000),
+					maxValue: new Date(endDate - 1000)
+				},
+				{
+					column: id("E:TOR860"),
+					minValue: 0.1
+				}
+			]);
+
+			for (var i = hourlyData.getNumberOfRows() - 1; i >= 0; i--)
+				if (!rowsToKeep.includes(i)) {
+					hourlyData.removeRow(i);
+				} else {
+					//subtract initial cumulative POT (unless plotting all)
+					if (rowsToKeep[0] > 0)
+						hourlyData.setCell(i, id("Cumulative POT"), hourlyData.getValue(i, id("Cumulative POT")) -
+							hourlyData.getValue(rowsToKeep[0] - 1, id("Cumulative POT")));
+				}
+
+			var viewHourly = new google.visualization.DataView(hourlyData);
+			var viewDaily = new google.visualization.DataView(dailyData);
+
+			var dateArray = [];
+			for (var i = 0; i < dailyData.getNumberOfRows(); i++)
+				dateArray.push(dailyData.getValue(i, 0));
+
+			/*
+			//Add days in the plot when plotting less than 7
+			while (dateArray.length<7) {
+				var addDay=new Date(dateArray[dateArray.length-1]);
+				addDay.setDate(addDay.getDate()+1);
+				dateArray.push(addDay);
+			}
+			*/
+			myGlob.opt.hAxis.ticks = dateArray;
+
+			// ----------- POT Plots ----------
+			optPOT = structuredClone(myGlob.opt);
+			optPOT.title = "POT";
+			optPOT.seriesType = 'bars';
+			optPOT.series = {
+				0: { targetAxisIndex: 0, visibleInLegend: false },
+				1: { targetAxisIndex: 1, type: 'line', visibleInLegend: true }
+			};
+			optPOT.vAxes = {
+				0: { title: "POT", format: 'scientific', maxValue: dailyData.getColumnRange(id("POT")).max * 1.1, minValue: 0, format: '0.0E00', titleTextStyle: { fontSize: 16, color: "blue" } },
+				1: { title: 'Cumulative POT', format: 'scientific', maxValue: dailyData.getColumnRange(id("Cumulative POT")).max * 1.1, minValue: 0, format: '0.0E00', titleTextStyle: { fontSize: 16, color: "red" } }
+			};
+
+			var chartPOT = new google.visualization.ComboChart(document.getElementById('pot_plot'));
+			// Listen for the 'select' event, and call my function selectHandler() when
+			// the user selects something on the chart.	  
+			google.visualization.events.addListener(chartPOT, 'select', () => { selectHandler(chartPOT, dailyData) });
+			viewDaily.setColumns([0, id("POT"), id("Cumulative POT")]);
+			chartPOT.draw(viewDaily, optPOT);
+
+			// ----------- Uptime plot -----------
+			optUptime = structuredClone(myGlob.opt);
+			optUptime.title = "Beam Uptime (hourly average evaluated by minute)";
+			optUptime.legend = 'none';
+			//	  optUptime.seriesType='line';
+			optUptime.pointSize = 2;
+			optUptime.lineWidth = 0;
+			optUptime.vAxes = {
+				0: { title: "Beam Uptime", format: 'percentage', maxValue: 100, minValue: 0, format: '#\'%\'', titleTextStyle: { fontSize: 16, color: "blue" } },
+			};
+
+			var chartUptime = new google.visualization.ComboChart(document.getElementById('uptime_plot'));
+			viewHourly.setColumns([0, id("Uptime")]);
+			chartUptime.draw(viewHourly, optUptime);
+
+			//  ----------- Stats table -----------
+
+			var tableData = new google.visualization.Table(document.getElementById('data_table'));
+			viewDaily.setColumns([0, id("POT"), id("NSpills"), id("NTriggers"), id("Uptime")]);
+			var optTable = structuredClone(myGlob.opt);
+			optTable.page = "enable";
+			delete optTable["height"];
+			google.visualization.events.addListener(tableData, 'select', () => { selectHandler(tableData, dailyData) });
+			tableData.draw(viewDaily, optTable);
+
+			//calculate totals
+			var statsData = google.visualization.data.group(
+				dailyData,
+				// group across entire table -- use modifier to return same value for every row
+				[{ column: 0, modifier: function () { return ''; }, type: 'string' }],
+				[
+					// aggregation functions
+					{ column: id("POT"), aggregation: google.visualization.data.sum, type: 'number' },
+					{ column: id("NSpills"), aggregation: google.visualization.data.sum, type: 'number' },
+					{ column: id("NTriggers"), aggregation: google.visualization.data.sum, type: 'number' },
+					{ column: id("Uptime"), aggregation: google.visualization.data.avg, type: 'number' },
+					{ column: id("Fail E:TOR860"), aggregation: google.visualization.data.sum, type: 'number' },
+					{ column: id("Fail E:THCURR"), aggregation: google.visualization.data.sum, type: 'number' },
+					{ column: id("Fail FOM"), aggregation: google.visualization.data.sum, type: 'number' }
+				]
+			);
+			var formatPOT = new google.visualization.NumberFormat({ pattern: '0.00E00' });
+			formatPOT.format(statsData, 1);
+			statsData.addColumn({ '': 'string' });
+			statsData.setCell(0, 8, "Total");
+
+			optTable.page = "disable";
+			var tableStats = new google.visualization.Table(document.getElementById('stats_table'));
+			var viewStats = new google.visualization.DataView(statsData);
+			viewStats.setColumns([8, 1, 2, 3, 4]);
+			tableStats.draw(viewStats, optTable);
+
+			// ----------- BDQ Plots ----------
+			var optBDQ = structuredClone(myGlob.opt);
+			optBDQ.title = "Beam Data Quality";
+			optBDQ.seriesType = 'line';
+			optBDQ.series = {
+				0: { targetAxisIndex: 0, visibleInLegend: true },
+				1: { targetAxisIndex: 1, visibleInLegend: true },
+				2: { targetAxisIndex: 0, visibleInLegend: true }
+			};
+			optBDQ.vAxes = {
+				0: { title: "REPLACE", maxValue: hourlyData.getColumnRange(id("E:TOR860")).max * 1.1, minValue: 0, format: '0.0', titleTextStyle: { fontSize: 16, color: "blue" } },
+				1: { title: 'Horn current', maxValue: hourlyData.getColumnRange(id("E:THCURR")).max * 1.1, minValue: 0, format: '0.0', titleTextStyle: { fontSize: 16, color: "red" } },
+			};
+
+			var chartBDQ = new google.visualization.ComboChart(document.getElementById('bdq_plot'));
+			// Listen for the 'select' event, and call my function selectHandler() when
+			// the user selects something on the chart.	  
+			google.visualization.events.addListener(chartBDQ, 'select', () => { selectHandler(chartBDQ, hourlyData) });
+			google.visualization.events.addListener(chartBDQ, 'ready', function () {
+				$.each($('text'), function (index, label) {
+					var labelText = $(label).text();
+					if (labelText=="REPLACE") {
+						labelText = '<tspan fill="blue">POT (1E12)</tspan>';
+						labelText += '<tspan fill="black">/</tspan>';
+						labelText += '<tspan fill="orange">FOM</tspan>';
+						$(label).html(labelText);
+					}
+				});
+
+				/*
+					var chartTitle = $('#chart text').filter(':contains("Mixed Title")')[0];
+				chartTitle.text("POT / FOM");
+				*/
+			});
+			viewHourly.setColumns([0, id("E:TOR860"), id("E:THCURR"), id("FOM")]);
+			chartBDQ.draw(viewHourly, optBDQ);
+
+			var pieData = google.visualization.arrayToDataTable([
+				['Filter', 'Number of Events'],
+				['Fail E:TOR860', statsData.getValue(0, statsData.getColumnIndex("Fail E:TOR860"))],
+				['Fail E:THCURR', statsData.getValue(0, statsData.getColumnIndex("Fail E:THCURR"))],
+				['Fail FOM', statsData.getValue(0, statsData.getColumnIndex("Fail FOM"))],
+				['Pass', statsData.getValue(0, statsData.getColumnIndex("NSpills"))
+					- statsData.getValue(0, statsData.getColumnIndex("Fail E:TOR860"))
+					- statsData.getValue(0, statsData.getColumnIndex("Fail E:THCURR"))
+					- statsData.getValue(0, statsData.getColumnIndex("Fail FOM"))
+				]
+			]);
+			var optPie=structuredClone(myGlob.opt);
+			var viewPieData = new google.visualization.DataView(pieData);
+			var chartPie1 = new google.visualization.PieChart(document.getElementById('bdq_pie_1'));
+			chartPie1.draw(viewPieData, optPie);
+
+			var chartPie2 = new google.visualization.PieChart(document.getElementById('bdq_pie_2'));
+			viewPieData.setRows([0, 1, 2]);
+			chartPie2.draw(viewPieData, myGlob.opt);
+
+			var tableBDQ = new google.visualization.Table(document.getElementById('bdq_table_1'));
+			viewPieData.setRows([0, 1, 2, 3]);
+			tableBDQ.draw(viewPieData, optTable);
+
+			plotDevices(["E:TOR860", "E:TOR875"], hourlyData, dailyData, "tor");
+			plotDevices(["E:THCURR", "E:LHCURR"], hourlyData, dailyData, "horn");
+			plotDevices(["E:HP875", "E:HPTG1", "E:VP873", "E:VP875"], hourlyData, dailyData, "bpm");
+			plotDevices(["E:LM875A", "E:LM875B", "E:LM875C"], hourlyData, dailyData, "lm");
+
+			//hide panels that should be hidden
+			myGlob.panels.forEach(panel => {
+				el = document.getElementById(panel);
+				b = "s_" + panel.substring(0, panel.indexOf("-"));
+				elMenu = document.getElementById(b);
+				if (!elMenu.classList.contains("has-text-weight-bold"))
+					el.classList.toggle("is-hidden");
+			});
+		}
+
+		function plotDevices(devList, dataHourly, dataDaily, elPrefix) {
+			var optTime = structuredClone(myGlob.opt);
+			var dateArray = [];
+			for (var i = 0; i < dataDaily.getNumberOfRows(); i++)
+				dateArray.push(dataDaily.getValue(i, 0));
+			optTime.hAxis.ticks = dateArray;
+			//strip E: from device name
+			var idev = 0;
+			optTime.series = {};
+			devList.forEach(dev => {
+				optTime.series[idev] = { labelInLegend: dev.substring(2, Math.max(dev.indexOf(" "), dev.length)) };
+				idev++;
+			});
+
+			var view = new google.visualization.DataView(dataHourly);
+			var viewDaily = new google.visualization.DataView(dataDaily);
+			var chartTime = new google.visualization.ComboChart(document.getElementById(elPrefix + '_data_plot'));
+			view.setColumns([0].concat(devList.map(id)));
+			google.visualization.events.addListener(chartTime, 'select', () => { selectHandler(chartTime, dataHourly) });
+
+			var idev = 0;
+			devList.forEach(dev => {
+				optTime.series[idev] = { labelInLegend: dev.substring(2, Math.max(dev.indexOf(" "), dev.length)) };
+				idev++;
+			});
+			if ((dataHourly.getValue(dataDaily.getNumberOfRows() - 1, 0) - dataHourly.getValue(0, 0)) / (24. * 60. * 60. * 1000) < 1)
+				adjustScale(optTime); //change from day ticks to hour if plotting one day
+
+			chartTime.draw(view, optTime);
+
+			var optEff = structuredClone(myGlob.opt);
+			optEff.title = "IFBEAM/ACNET Efficiency";
+			optEff.vAxis = {
+				minValue: 0,
+				maxValue: 1.1
+			};
+			idev = 0;
+			optEff.seriesType = 'bars';
+			optEff.series = {};
+			devList.forEach(dev => {
+				optEff.series[idev] = { labelInLegend: dev.substring(2, Math.max(dev.indexOf(" "), dev.length)) };
+				idev++;
+			});
+
+			var chartEff = new google.visualization.ComboChart(document.getElementById(elPrefix + '_eff_plot'));
+			view.setColumns([0].concat(devList.map(dev => dev + " Efficiency").map(id)));
+			viewDaily.setColumns([0].concat(devList.map(dev => dev + " Efficiency").map(id)));
+			if ((dataDaily.getValue(dataDaily.getNumberOfRows() - 1, 0) - dataDaily.getValue(0, 0)) / (24. * 60. * 60. * 1000) < 1) {
+				adjustScale(optEff); //change from day ticks to hour if plotting one day
+				chartEff.draw(view, optEff);
+				google.visualization.events.addListener(chartEff, 'select', () => { selectForIFBEAM(chartEff, dataHourly) });
+			} else {
+				chartEff.draw(viewDaily, optEff);
+				google.visualization.events.addListener(chartEff, 'select', () => { selectHandler(chartEff, dataDaily) });
+
+			}
+
+			//calculate stats
+			stats = [];
+			devList.forEach(dev => {
+				stats.push({ column: id(dev), label: "sum_" + dev, aggregation: google.visualization.data.sum, type: 'number' })
+				stats.push({ column: id(dev), label: "avg_" + dev, aggregation: google.visualization.data.avg, type: 'number' })
+				stats.push({ column: id(dev), label: "min_" + dev, aggregation: google.visualization.data.min, type: 'number' })
+				stats.push({ column: id(dev), label: "max_" + dev, aggregation: google.visualization.data.max, type: 'number' })
+				stats.push({ column: id(dev + " Efficiency"), label: "eff_" + dev, aggregation: google.visualization.data.avg, type: 'number' })
+			});
+
+			var statsData = google.visualization.data.group(
+				dataHourly,
+				// group across entire table -- use modifier to return same value for every row
+				[{ column: 0, modifier: function () { return ''; }, type: 'string' }],
+				stats
+			);
+
+			var summary = new google.visualization.DataTable();
+			summary.addColumn('string', 'Device');
+			summary.addColumn('number', 'Average');
+			summary.addColumn('number', 'Min');
+			summary.addColumn('number', 'Max');
+			summary.addColumn('number', 'Efficiency');
+			devList.forEach(dev => {
+				summary.addRow([dev.substring(2, Math.max(dev.indexOf(" "), dev.length)),
+				statsData.getValue(0, statsData.getColumnIndex("avg_" + dev)),
+				statsData.getValue(0, statsData.getColumnIndex("min_" + dev)),
+				statsData.getValue(0, statsData.getColumnIndex("max_" + dev)),
+				statsData.getValue(0, statsData.getColumnIndex("eff_" + dev))])
+			});
+
+			var tableSummary = new google.visualization.Table(document.getElementById(elPrefix + '_stats'));
+			var viewSummary = new google.visualization.DataView(summary);
+			var optTable = structuredClone(myGlob.opt);
+			delete optTable["height"];
+			tableSummary.draw(viewSummary, optTable);
+		}
+
+		function switchTo(what) {
+			divList = [];
+			myGlob.panels.forEach(panel => {
+				b = panel.substring(0, panel.indexOf("-"));
+				if (!divList.includes(b))
+					divList.push(b);
+			});
+			for (var i = 0; i < divList.length; i++) {
+				const plotSet1 = document.getElementById(divList[i] + "-1");
+				//	      const plotSet2=document.getElementById(divList[i]+"-2");
+				const menuOption = document.getElementById("s_" + divList[i]);
+
+				if ((what == divList[i] && !menuOption.classList.contains("has-text-weight-bold")) ||
+					(what != divList[i] && menuOption.classList.contains("has-text-weight-bold"))) {
+					plotSet1.classList.toggle("is-hidden");
+					//		  plotSet2.classList.toggle("is-hidden");
+					menuOption.classList.toggle("has-text-weight-bold");
+				}
+			}
+		}
+
+		function id(dev) {
+			index = myGlob.dataHourly.getColumnIndex(dev);
+			if (index == -1)
+				console.log("Failed to find index for ", dev);
+			return index
+		}
+
+		function buttonClick(val) {
+			var currentWeek = new Date();
+			if (currentWeek.getDay() != 1)
+				currentWeek.setDate(currentWeek.getDate() - (currentWeek.getDay() + 6) % 7);
+
+			currentWeek.setHours(0); currentWeek.setMinutes(0); currentWeek.setSeconds(0);
+			var lastWeekSun = currentWeek;
+			today = new Date();
+
+			//flip all that are hidden otherwise legend gets messed up
+			myGlob.panels.forEach(panel => {
+				el = document.getElementById(panel);
+				if (el.classList.contains("is-hidden"))
+					el.classList.toggle("is-hidden");
+			});
+
+			var startDate;
+			var endDate;
+			if (val == "now") {
+				startDate = new Date(currentWeek);
+				endDate = new Date();
+			} else if (val == "last") {
+				startDate = new Date(currentWeek.getTime() - 24 * 60 * 60 * 1000 * 7);
+				endDate = currentWeek;
+			} else if (val == "all") {
+				startDate = new Date(myGlob.dataHourly.getColumnRange(0).min);
+				endDate = new Date(myGlob.dataHourly.getColumnRange(0).max);
+			}
+
+			myGlob.calendars[0].startDate.setTime(startDate.getTime());
+			myGlob.calendars[0].endDate.setTime(endDate.getTime());
+			myGlob.calendars[0]._refreshInput();
+			plotData(startDate, endDate);
+		}
+	</script>
+
+</head>
+
+<body>
+	<div class="container">
+		<nav class="navbar" role="navigation" aria-label="main navigation">
+			<div class="navbar-brand">
+				<a class="navbar-item">
+					<input id="datePicker" class="bulmaCalendar" type="date" />
+				</a>
+				<a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false"
+					data-target="myNavbar">
+					<span aria-hidden="true"></span>
+					<span aria-hidden="true"></span>
+					<span aria-hidden="true"></span>
+					<span aria-hidden="true"></span>
+				</a>
+			</div>
+			<div id="myNavbar" class="navbar-menu is-size-4 is-size-6-desktop">
+				<div class="navbar-item">
+					<button class="button is-info is-rounded" onClick="buttonClick('now')">This week</button>
+				</div>
+				<div class="navbar-item">
+					<button class="button is-success is-rounded" onClick="buttonClick('last')">Last week</button>
+				</div>
+				<div class="navbar-item">
+					<button class="button is-warning is-rounded" onClick="buttonClick('all')">All time</button>
+				</div>
+				<div class="navbar-end">
+					<div class="navbar-item has-dropdown is-hoverable">
+						<div class="navbar-link navbar-item">
+							<a class="navbar-item has-text-weight-bold is-size-4" onClick="switchTo('bdq')"
+								id="s_bdq">BDQ</a>
+						</div>
+						<div class="navbar-dropdown">
+							<div class="navbar-item">
+								<a class="navbar-item is-size-5" onClick="switchTo('tor')" id="s_tor">Toroids</a>
+							</div>
+							<div class="navbar-item">
+								<a class="navbar-item is-size-5" onClick="switchTo('horn')" id="s_horn">Horn</a>
+							</div>
+							<div class="navbar-item">
+								<a class="navbar-item is-size-5" onClick="switchTo('bpm')" id="s_bpm">BPMs</a>
+							</div>
+							<hr class="navbar-divider">
+							<div class="navbar-item">
+								<a class="navbar-item is-size-5" onClick="switchTo('lm')" id="s_lm">Loss Monitors</a>
+							</div>
+						</div>
+					</div>
+					<div class="navbar-item">
+						<a class="navbar-item is-size-4" onClick="switchTo('pot')" id="s_pot">POT</a>
+					</div>
+				</div>
+			</div>
+		</nav>
+		<br>
+		<div class="columns is-centered has-text-centered is-multiline is-desktop" id="bdq-1">
+			<div class="column is-half-desktop">
+				<p id="bdq_plot"></p>
+			</div>
+			<div class="column is-quarter-desktop">
+				<p id="bdq_pie_1"></p>
+			</div>
+			<div class="column is-quarter-desktop">
+				<p id="bdq_pie_2"></p>
+			</div>
+			<div class="column is-three-quarters ml-6">
+				<p id="bdq_table_1"></p>
+				<br>
+				<p id="bdq_table_2"></p>
+			</div>
+		</div>
+		<div class="columns is-centered has-text-centered is-multiline is-desktop" id="pot-1">
+			<div class="column is-half-desktop">
+				<p id="pot_plot"></p>
+			</div>
+			<div class="column is-half-desktop">
+				<p id="uptime_plot"></p>
+			</div>
+
+			<div class="column is-three-quarters ml-6">
+				<p id="data_table"></p>
+				<br>
+				<p id="stats_table"></p>
+			</div>
+		</div>
+
+		<div class="columns is-centered has-text-centered is-multiline is-desktop" id="tor-1">
+			<div class="column is-half-desktop">
+				<p id="tor_data_plot"></p>
+			</div>
+			<div class="column is-half-desktop">
+				<p id="tor_eff_plot"></p>
+			</div>
+			<div class="column is-three-quarters ml-6">
+				<p id="tor_stats"></p>
+			</div>
+		</div>
+
+		<div class="columns is-centered has-text-centered is-multiline is-desktop" id="horn-1">
+			<div class="column is-half-desktop">
+				<p id="horn_data_plot"></p>
+			</div>
+			<div class="column is-half-desktop">
+				<p id="horn_eff_plot"></p>
+			</div>
+			<div class="column is-three-quarters ml-6">
+				<p id="horn_stats"></p>
+			</div>
+		</div>
+
+		<div class="columns is-centered has-text-centered is-multiline is-desktop" id="bpm-1">
+			<div class="column is-half-desktop">
+				<p id="bpm_data_plot"></p>
+			</div>
+			<div class="column is-half-desktop">
+				<p id="bpm_eff_plot"></p>
+			</div>
+			<div class="column is-three-quarters ml-6">
+				<p id="bpm_stats"></p>
+			</div>
+		</div>
+
+		<div class="columns is-centered has-text-centered is-multiline is-desktop" id="lm-1">
+			<div class="column is-half-desktop">
+				<p id="lm_data_plot"></p>
+			</div>
+			<div class="column is-half-desktop">
+				<p id="lm_eff_plot"></p>
+			</div>
+			<div class="column is-three-quarters ml-6">
+				<p id="lm_stats"></p>
+			</div>
+		</div>
 	</div>
-	<div id="myNavbar" class="navbar-menu is-size-4 is-size-6-desktop">
-	  <div class="navbar-item">
-	    <button class="button is-info is-rounded" onClick="buttonClick('now')">This week</button>
-	  </div>
-	  <div class="navbar-item">
-	    <button class="button is-success is-rounded" onClick="buttonClick('last')">Last week</button>
-	  </div>
-	  <div class="navbar-item">
-	    <button class="button is-warning is-rounded" onClick="buttonClick('all')">All time</button>
-	  </div>  
-	  <div class="navbar-end">
-	    <div class="navbar-item">
-	      <a class="navbar-item has-text-weight-bold" onClick="switchTo('pot')" id="s_pot">POT</a>
-	    </div>
-	    <div class="navbar-item">
-	      <a class="navbar-item" onClick="switchTo('tor')" id="s_tor">Toroids</a>
-	    </div>
-	    <div class="navbar-item">
-	      <a class="navbar-item" onClick="switchTo('horn')" id="s_horn">Horn</a>
-	    </div>
-	    <div class="navbar-item">
-	      <a class="navbar-item" onClick="switchTo('bpm')" id="s_bpm">BPMs</a>
-	    </div>
-	    <div class="navbar-item">
-	      <a class="navbar-item" onClick="switchTo('lm')" id="s_lm">Loss Monitors</a>
-	    </div>
-	  </div>
-	</div>
-      </nav>
-      <br>
-    <div class="container">
-      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="pot-1">
-	<div class="column is-half-desktop">
-	  <p id="pot_plot"></p>
-	</div>
-	<div class="column is-half-desktop">
-	  <p id="uptime_plot"></p>
-	</div>
+	<br>
+	<p id="lastUpdated" class="is-size-6 ml-4"></p>
+	<br>
+</body>
 
-	<div class="column is-three-quarters ml-6">
-	  <p id="data_table"></p>
-	  <br>
-	  <p id="stats_table"></p>
-	</div>
-      </div>
-      
-      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="tor-1">
-	<div class="column is-half-desktop">
-	  <p id="tor_data_plot"></p>
-	</div>
-	<div class="column is-half-desktop">
-	  <p id="tor_eff_plot"></p>
-	</div>
-	<div class="column is-three-quarters ml-6">
-	  <p id="tor_stats"></p>
-	</div>
-      </div>
-
-      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="horn-1">
-	<div class="column is-half-desktop">
-	  <p id="horn_data_plot"></p>
-	</div>
-	<div class="column is-half-desktop">
-	  <p id="horn_eff_plot"></p>
-	</div>
-	<div class="column is-three-quarters ml-6">
-	  <p id="horn_stats"></p>
-	</div>
-      </div>
-      
-      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="bpm-1">
-	<div class="column is-half-desktop">
-	  <p id="bpm_data_plot"></p>
-	</div>
-	<div class="column is-half-desktop">
-	  <p id="bpm_eff_plot"></p>
-	</div>
-	<div class="column is-three-quarters ml-6">
-	  <p id="bpm_stats"></p>
-	</div>
-      </div>
-      
-      <div class="columns is-centered has-text-centered is-multiline is-desktop" id="lm-1">
-	<div class="column is-half-desktop">
-	  <p id="lm_data_plot"></p>
-	</div>
-	<div class="column is-half-desktop">
-	  <p id="lm_eff_plot"></p>
-	</div>
-	<div class="column is-three-quarters ml-6">
-	  <p id="lm_stats"></p>
-	</div>
-      </div>
-    </div>
-    <br>
-    <p id="lastUpdated" class="is-size-6 ml-4"></p>
-    <br>
-  </body>
 </html>
