@@ -6,7 +6,8 @@ LOGFILE=$WORKDIR/log/ifbeam_data.log
 DATAFILE=$WORKDIR/data/beam_data_hourly.csv
 
 echo $(date)
-/usr/bin/kinit -kt /var/kerberos/krb5/user/`id -u`/client.keytab ${USER}/cron/sbndgpvm01.fnal.gov@FNAL.GOV
+#export KRB5CCNAME=FILE:/tmp/krb5cc_`id -u`_cron$$
+#/usr/bin/kinit -kt /var/kerberos/krb5/user/`id -u`/client.keytab ${USER}/cron/`hostname`@FNAL.GOV
 klist
 echo WORKDIR=$WORKDIR
 echo WEBDATA=$WEBDATA
