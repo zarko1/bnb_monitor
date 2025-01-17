@@ -45,9 +45,6 @@ def beam_quality(devdict):
             err=err | 0b01
         err=err<<2
     err=err>>2
-    if err>0:
-        print(devdict)
-        print(bin(err))
     return bdqnorm|err
 
 def get_fom(data,bpm_zpos,bpm_off,tgt_zpos,norm):
