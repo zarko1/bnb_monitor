@@ -68,10 +68,12 @@
 				currentWeek.setDate(currentWeek.getDate() - (currentWeek.getDay() + 6) % 7);
 
 			currentWeek.setHours(0); currentWeek.setMinutes(0); currentWeek.setSeconds(0);
+			last24hrs = new Date();
+			last24hrs.setDate(last24hrs.getDate() - 1);
 			var calOpt = {
 				type: 'date',
 				isRange: true,
-				startDate: currentWeek,
+				startDate: last24hrs,
 				endDate: new Date(),
 				maxDate: new Date(),
 				showClearButton: false,
@@ -178,17 +180,20 @@
 		function processData(data) {
 			data.addColumn('number', 'POT');
 			data.addColumn('number', 'Cumulative POT');
+			data.addColumn('number', 'Miss E:TOR860');
 
 			for (var i = 0; i < data.getNumberOfRows(); i++) {
 				var totPOT = data.getValue(i, id("E:TOR860")) * data.getValue(i, id("NSpills")) * 1e12;
 				var normLM875A = data.getValue(i, id("E:LM875A")) * data.getValue(i, id("NSpills")) / totPOT * 1e12;
 				var normLM875B = data.getValue(i, id("E:LM875B")) * data.getValue(i, id("NSpills")) / totPOT * 1e12;
 				var normLM875C = data.getValue(i, id("E:LM875C")) * data.getValue(i, id("NSpills")) / totPOT * 1e12;
+				var missTOR860 = Math.round(data.getValue(i, id("NTriggers"))-data.getValue(i, id("E:TOR860 Efficiency"))*data.getValue(i, id("NTriggers")));
 
 				data.setCell(i, id("POT"), totPOT);
 				data.setCell(i, id("E:LM875A"), normLM875A);
 				data.setCell(i, id("E:LM875B"), normLM875B);
 				data.setCell(i, id("E:LM875C"), normLM875C);
+				data.setCell(i, id("Miss E:TOR860"), missTOR860);
 				data.setCell(i, id("Uptime"), data.getValue(i, id("Uptime")) * 100.); //scale percentages
 				if (i == 0)
 					data.setCell(i, id("Cumulative POT"), totPOT);
@@ -231,7 +236,6 @@
 					+ "&t1="
 					+ endDate.toISOString().slice(0, -1)
 					+ "&f=csv";
-				console.log(url);
 				window.open(url, '_blank');
 			}
 		}
@@ -313,6 +317,7 @@
 			}
 			*/
 			myGlob.opt.hAxis.ticks = dateArray;
+			myGlob.opt.hAxis.format = 'M/d/y';
 
 			// ----------- POT Plots ----------
 			optPOT = structuredClone(myGlob.opt);
@@ -372,21 +377,25 @@
 					{ column: id("Uptime"), aggregation: google.visualization.data.avg, type: 'number' },
 					{ column: id("Fail E:TOR860"), aggregation: google.visualization.data.sum, type: 'number' },
 					{ column: id("Fail E:THCURR"), aggregation: google.visualization.data.sum, type: 'number' },
-					{ column: id("Fail FOM"), aggregation: google.visualization.data.sum, type: 'number' }
+					{ column: id("Fail FOM"), aggregation: google.visualization.data.sum, type: 'number' },
+					{ column: id("Miss E:TOR860"), aggregation: google.visualization.data.sum, type: 'number' }
 				]
 			);
 			var formatPOT = new google.visualization.NumberFormat({ pattern: '0.00E00' });
 			formatPOT.format(statsData, 1);
 			statsData.addColumn({ '': 'string' });
-			statsData.setCell(0, 8, "Total");
+			statsData.setCell(0, 9, "Total");
 
 			optTable.page = "disable";
 			var tableStats = new google.visualization.Table(document.getElementById('stats_table'));
 			var viewStats = new google.visualization.DataView(statsData);
-			viewStats.setColumns([8, 1, 2, 3, 4]);
+			viewStats.setColumns([9, 1, 2, 3, 4, 5]);
 			tableStats.draw(viewStats, optTable);
 
 			// ----------- BDQ Plots ----------
+			if ((endDate - startDate) / (24 * 60 * 60 * 1000) < 1.2) 
+				adjustScale(myGlob.opt);
+
 			var optBDQ = structuredClone(myGlob.opt);
 			optBDQ.title = "Beam Data Quality";
 			optBDQ.seriesType = 'line';
@@ -407,7 +416,7 @@
 			google.visualization.events.addListener(chartBDQ, 'ready', function () {
 				$.each($('text'), function (index, label) {
 					var labelText = $(label).text();
-					if (labelText=="REPLACE") {
+					if (labelText == "REPLACE") {
 						labelText = '<tspan fill="blue">POT (1E12)</tspan>';
 						labelText += '<tspan fill="black">/</tspan>';
 						labelText += '<tspan fill="orange">FOM</tspan>';
@@ -428,23 +437,28 @@
 				['Fail E:TOR860', statsData.getValue(0, statsData.getColumnIndex("Fail E:TOR860"))],
 				['Fail E:THCURR', statsData.getValue(0, statsData.getColumnIndex("Fail E:THCURR"))],
 				['Fail FOM', statsData.getValue(0, statsData.getColumnIndex("Fail FOM"))],
+				["Miss E:TOR860", statsData.getValue(0,statsData.getColumnIndex("Miss E:TOR860"))],
 				['Pass', statsData.getValue(0, statsData.getColumnIndex("NSpills"))
 					- statsData.getValue(0, statsData.getColumnIndex("Fail E:TOR860"))
 					- statsData.getValue(0, statsData.getColumnIndex("Fail E:THCURR"))
 					- statsData.getValue(0, statsData.getColumnIndex("Fail FOM"))
-				]
+				],
 			]);
-			var optPie=structuredClone(myGlob.opt);
+			var optPie = structuredClone(myGlob.opt);
+			optPie.title="Passing/Failing BDQ";
+			//optPie.slices={1: {offset: 0.05}, 2: {offset: 0.05}, 3: {offset: 0.05}, 4: {offset: 0.05}};
+			optPie.colors=["blue", "red", "orange", "purple", "green"];
 			var viewPieData = new google.visualization.DataView(pieData);
 			var chartPie1 = new google.visualization.PieChart(document.getElementById('bdq_pie_1'));
 			chartPie1.draw(viewPieData, optPie);
 
+			optPie.title="Failed events break down";
 			var chartPie2 = new google.visualization.PieChart(document.getElementById('bdq_pie_2'));
-			viewPieData.setRows([0, 1, 2]);
-			chartPie2.draw(viewPieData, myGlob.opt);
+			viewPieData.setRows([0, 1, 2, 3]);
+			chartPie2.draw(viewPieData, optPie);
 
 			var tableBDQ = new google.visualization.Table(document.getElementById('bdq_table_1'));
-			viewPieData.setRows([0, 1, 2, 3]);
+			viewPieData.setRows([0, 1, 2, 3, 4]);
 			tableBDQ.draw(viewPieData, optTable);
 
 			plotDevices(["E:TOR860", "E:TOR875"], hourlyData, dailyData, "tor");
@@ -465,9 +479,10 @@
 		function plotDevices(devList, dataHourly, dataDaily, elPrefix) {
 			var optTime = structuredClone(myGlob.opt);
 			var dateArray = [];
-			for (var i = 0; i < dataDaily.getNumberOfRows(); i++)
-				dateArray.push(dataDaily.getValue(i, 0));
-			optTime.hAxis.ticks = dateArray;
+			//for (var i = 0; i < dataDaily.getNumberOfRows(); i++)
+			//	dateArray.push(dataDaily.getValue(i, 0));
+			//optTime.hAxis.ticks = dateArray;
+
 			//strip E: from device name
 			var idev = 0;
 			optTime.series = {};
@@ -487,9 +502,9 @@
 				optTime.series[idev] = { labelInLegend: dev.substring(2, Math.max(dev.indexOf(" "), dev.length)) };
 				idev++;
 			});
-			if ((dataHourly.getValue(dataDaily.getNumberOfRows() - 1, 0) - dataHourly.getValue(0, 0)) / (24. * 60. * 60. * 1000) < 1)
+			if ((dataHourly.getValue(dataHourly.getNumberOfRows() - 1, 0) - dataHourly.getValue(0, 0)) / (24. * 60. * 60. * 1000) < 1) 
 				adjustScale(optTime); //change from day ticks to hour if plotting one day
-
+			
 			chartTime.draw(view, optTime);
 
 			var optEff = structuredClone(myGlob.opt);
@@ -603,7 +618,11 @@
 
 			var startDate;
 			var endDate;
-			if (val == "now") {
+			if (val == "hrs") {
+				endDate = new Date();
+				startDate = new Date();
+				startDate.setDate(endDate.getDate() - 1);
+			} else if (val == "this") {
 				startDate = new Date(currentWeek);
 				endDate = new Date();
 			} else if (val == "last") {
@@ -640,13 +659,16 @@
 			</div>
 			<div id="myNavbar" class="navbar-menu is-size-4 is-size-6-desktop">
 				<div class="navbar-item">
-					<button class="button is-info is-rounded" onClick="buttonClick('now')">This week</button>
+					<button class="button is-warning is-rounded" onClick="buttonClick('hrs')">Last 24hrs</button>
+				</div>
+				<div class="navbar-item">
+					<button class="button is-info is-rounded" onClick="buttonClick('this')">This week</button>
 				</div>
 				<div class="navbar-item">
 					<button class="button is-success is-rounded" onClick="buttonClick('last')">Last week</button>
 				</div>
 				<div class="navbar-item">
-					<button class="button is-warning is-rounded" onClick="buttonClick('all')">All time</button>
+					<button class="button is-danger is-rounded" onClick="buttonClick('all')">All time</button>
 				</div>
 				<div class="navbar-end">
 					<div class="navbar-item has-dropdown is-hoverable">
