@@ -232,11 +232,12 @@
 				var startDate = new Date(data.getValue(selectedItem.row, 0));
 				var endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
 				var url = "https://dbdata0vm.fnal.gov:8104/ifbeam/data/data?b=BNB_monitor&t0="
-					+ startDate.toISOString().slice(0, -1)
+					+ startDate.toISOString().slice(0, -1)+"+00" //ISOString in UTC
 					+ "&t1="
-					+ endDate.toISOString().slice(0, -1)
+					+ endDate.toISOString().slice(0, -1)+"+00"
 					+ "&f=csv";
-				window.open(url, '_blank');
+
+					window.open(url, '_blank');
 			}
 		}
 
