@@ -1,5 +1,5 @@
 # BNB Monitoring
-Scripts and html for BNB monitoring.
+Scripts and html for BNB monitoring. 
 
 # Installation
 
@@ -20,9 +20,9 @@ activate
 ```bash
 source venv/bin/activate
 ```
-and install pandas
+and install pandas and scipy
 ```bash
-pip install pandas
+pip install pandas scipy
 ```
 
 ## Setup web page
@@ -34,8 +34,8 @@ Copy ./web and its content to the web server.
 Install crontab (example in scripts/crontab):
 ```
 05 * * * * PATH_TO_YOUR_WORK_DIR/scripts/cronJob.sh >> PATH_TO_YOUR_WORKDIR/log/cron.log 2>&1
-```
-If you haven't done it before run kcroninit to get the kerberos ticket for your cron jobs. 
+``` 
+This setup assumes running under sbndpro on sbndgpvm01 which is already setup with kerberos principal and permissions to write into kerberized nfs. Do not run under private account if writing into nfs. 
 
 ## Modify paths
 Update the $WORKDIR and $WEBDATA paths in the scripts/cronJob.sh script.
@@ -63,6 +63,3 @@ optional arguments:
   -d, --debug           Prints out more info.
 
 ```
-
-
-
