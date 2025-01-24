@@ -21,7 +21,8 @@
 		var myGlob = {
 			doNotAverage: ["NSpills", "NTriggers", "Fail E:TOR860", "Fail E:THCURR", "Fail FOM"],
 			//	  panels: ["pot-1","pot-2","tor-1","tor-2","horn-1","horn-2","bpm-1","bpm-2","lm-1","lm-2"]
-			panels: ["bdq-1", "pot-1", "tor-1", "horn-1", "bpm-1", "lm-1"]
+			panels: ["bdq-1", "pot-1", "tor-1", "horn-1", "bpm-1", "lm-1"],
+			is24hr: true
 		};
 
 		function init() {
@@ -141,6 +142,10 @@
 				else
 					myGlob.calendars[0].datePicker._min.setTime(arrayDataDaily[1][0].getTime());
 
+				if (myGlob.is24hr) {
+					myGlob.calendars[0].datePicker._max.setTime(tstamp);
+					myGlob.calendars[0].endDate.setTime(new Date(tstamp.getTime()+60*1000));
+				}
 				myGlob.calendars[0]._refreshInput();
 
 				plotData(myGlob.calendars[0].startDate, myGlob.calendars[0].endDate);
@@ -619,10 +624,12 @@
 
 			var startDate;
 			var endDate;
+			myGlob.is24hr=false;
 			if (val == "hrs") {
 				endDate = new Date();
 				startDate = new Date();
 				startDate.setDate(endDate.getDate() - 1);
+				myGlob.is24hr=true;
 			} else if (val == "this") {
 				startDate = new Date(currentWeek);
 				endDate = new Date();

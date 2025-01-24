@@ -7,4 +7,4 @@
 #|  +----------- hours (0 -23)
 #+-------------- minutes (0 - 59)
 
-05 * * * * /exp/sbnd/app/users/${USER}/work/bnbmon/scripts/cronJob.sh >> /exp/sbnd/app/users/${USER}/work/bnbmon/log/cron.log 2>&1
+05 * * * * /exp/sbnd/app/users/${USER}/bnb_monitor/scripts/cronJob.sh >> /exp/sbnd/app/users/${USER}/bnb_monitor/log/cron.log 2>&1

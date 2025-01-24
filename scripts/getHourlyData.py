@@ -258,7 +258,7 @@ for time_slice in hours(start_time, end_time):
 
     if np.count_nonzero(selection_tor860)>0:
         if abs(np.count_nonzero(selection_tor875)/np.count_nonzero(selection_tor860)-1)>0.005:
-            print("%s Mismatch between tor860 and tor875 counts. %i vs %i"%(t0.isoformat(),len(selection_tor860),len(selection_tor875)))
+            print("%s Mismatch between tor860 and tor875 counts. %f vs %f"%(t0.isoformat(),np.count_nonzero(selection_tor860),np.count_nonzero(selection_tor875)))
 
     N_spills=len(ddf[selection]) # with beam
     N_triggers=ddf["E:TOR860"].count() # total triggers

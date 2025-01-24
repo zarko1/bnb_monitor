@@ -1,7 +1,7 @@
 #!/bin/bash
 
-WORKDIR=/exp/sbnd/app/users/${USER}/work/bnbmon/
-WEBDATA=/publicweb/z/${USER}/bnb_monitor/data
+WORKDIR=/exp/sbnd/app/users/${USER}/bnb_monitor/
+WEBDATA=/web/sites/s/sbn-online.fnal.gov/htdocs/sbnd/beammon/data
 LOGFILE=$WORKDIR/log/ifbeam_data.log
 DATAFILE=$WORKDIR/data/beam_data_hourly.csv
 
@@ -19,4 +19,3 @@ echo Run getHourlyData.py
 
 echo Copy data to web area
 cp $DATAFILE $WEBDATA
-
