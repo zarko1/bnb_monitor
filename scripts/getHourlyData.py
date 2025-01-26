@@ -17,11 +17,11 @@ def hours(start_time, end_time):
         yield current_time
         current_time += timedelta(hours=1)
 
-def fill_zero(tstamp, devlist):
+def fill_zero(tstamp, devlist,N_trig=0):
     output="%s,"%(tstamp)
     output+="0,"*len(savedev)
     output+="1,"*len(savedev) #IFBEAM efficiency, take as 1 when beam is down
-    output+="0,0,0,0," # spills,triggers,fom and uptime
+    output+="0,%i,0,0,"%N_trig # spills,triggers,fom and uptime
     output+="0,0,0\n" # fail tor, horn, fom
     return output
 
@@ -231,25 +231,6 @@ for time_slice in hours(start_time, end_time):
         selection_tor860=(ddf["E:TOR860"]>0.1)&(ddf["E:TOR860"]<6)
     if "E:TOR875" in devlist:
         selection_tor875=(ddf["E:TOR875"]>0.1)&(ddf["E:TOR875"]<6)
-        
-    if np.count_nonzero(selection_tor860)==0 and np.count_nonzero(selection_tor875)==0:
-        #no toroids in event, so count as 0
-        output=fill_zero(t1.isoformat(),savedev)
-        t0=time_slice
-        if debug:
-            print("No toroids in events")
-            print(output)
-        outfile.write(output)
-        continue
-    
-    #looks like there was some beam, so can do beam quality cuts
-    ddf["FOM"]=ddf.apply(lambda x: get_fom({d:x[d] for d in devs_used_for_fom},bpm_zpos,bpm_off,tgt_zpos,norm),axis=1)
-    ddf["BDQ"]=ddf.apply(lambda x: beam_quality({ d:x[d] for d in devs_used_for_bdq}), axis=1)
-    
-    mask=0b11
-    for d in devs_used_for_bdq[::-1]:
-        ddf["Fail %s"%d]  = ddf.apply(lambda x: bool(int(x["BDQ"])&mask),axis=1)
-        mask=mask<<2
     
     if np.count_nonzero(selection_tor860)>np.count_nonzero(selection_tor875):
         selection=selection_tor860
@@ -276,16 +257,24 @@ for time_slice in hours(start_time, end_time):
             if N>N_triggers:
                 N_triggers=N
 
-
-    #fill zeros if no beam
-    if N_spills==0:
-        output=fill_zero(t1.isoformat(),savedev)
+    if np.count_nonzero(selection_tor860)==0 and np.count_nonzero(selection_tor875)==0:
+        #no beam in event, so count as 0, just add number of triggers
+        output=fill_zero(t1.isoformat(),savedev,N_triggers)
         t0=time_slice
         if debug:
-            print("N_spills=0")
+            print("No beam in events")
             print(output)
         outfile.write(output)
         continue
+    
+    #looks like there was some beam, so can do beam quality cuts
+    ddf["FOM"]=ddf.apply(lambda x: get_fom({d:x[d] for d in devs_used_for_fom},bpm_zpos,bpm_off,tgt_zpos,norm),axis=1)
+    ddf["BDQ"]=ddf.apply(lambda x: beam_quality({ d:x[d] for d in devs_used_for_bdq}), axis=1)
+    
+    mask=0b11
+    for d in devs_used_for_bdq[::-1]:
+        ddf["Fail %s"%d]  = ddf.apply(lambda x: bool(int(x["BDQ"])&mask),axis=1)
+        mask=mask<<2
 
     #process data with beam
     tot={}
