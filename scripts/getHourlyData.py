@@ -100,7 +100,7 @@ devlimits={
     "E:TOR875": { "min": -0.5,
                   "max": 6},
     "E:THCURR": { "min": 172,
-                  "max": 174},
+                  "max": 176},
     "E:HP875": { "min": -6-0.5,
                   "max": -6+0.5},
     "E:HPTG1": { "min": -2-0.5,
