@@ -266,9 +266,15 @@ for time_slice in hours(start_time, end_time):
             print(output)
         outfile.write(output)
         continue
-    
+
     #looks like there was some beam, so can do beam quality cuts
-    ddf["FOM"]=ddf.apply(lambda x: get_fom({d:x[d] for d in devs_used_for_fom},bpm_zpos,bpm_off,tgt_zpos,norm),axis=1)
+    #check if we have devices to calculate FOM
+    if  set(devs_used_for_fom).issubset(ddf.columns):
+        ddf["FOM"]=ddf.apply(lambda x: get_fom({d:x[d] for d in devs_used_for_fom},bpm_zpos,bpm_off,tgt_zpos,norm),axis=1)
+    else:
+        #if missing toroids then just set FOM to 0
+        ddf["FOM"]=ddf.apply(lambda x: 0,axis=1)
+
     ddf["BDQ"]=ddf.apply(lambda x: beam_quality({ d:x[d] for d in devs_used_for_bdq}), axis=1)
     
     mask=0b11
